@@ -1,0 +1,9 @@
+creating index.mjs
+npm init
+npm start
+///---------installing libraries-------///
+npm i express (express is a web app framework for node.js to handle HTTP request, routing, middleware and views)
+npm i cookie-parser (In Node.js, Cookie-parser is a middleware that parses cookies attached to the HTTP requests. It extracts the cookie data and makes it available as an object on the request object)
+npm i cors (CORS stands for Cross-Origin Resource Sharing, which is a security mechanism used by web browsers to prevent web pages from making requests to a different domain than the one that served the original web page)
+npm i path (it is use for static hosting in my case, further you can search on GPT)
+npm i mongoose (Mongoose is an Object Data Modeling (ODM) library for Node.js and MongoDB. It provides a simple and elegant way to model data for MongoDB databases by defining schemas and models for data)
