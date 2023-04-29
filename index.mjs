@@ -3,7 +3,8 @@ import cookieParser from "cookie-parser";
 import cors from "cors";
 import path from "path";
 import mongoose from "mongoose";
-import { error, log } from "console";
+import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
 mongoose.set("strictQuery", false);
 
 const app = express();
@@ -27,6 +28,7 @@ const userSchema = new mongoose.Schema({
     type: String,
     match: /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
     unique: true,
+    required: true,
   },
 });
 export const userModel = mongoose.model("NewUsers", userSchema);
@@ -34,13 +36,17 @@ export const userModel = mongoose.model("NewUsers", userSchema);
 app.post("/api/v1/signUp", async (req, res) => {
   //   try {
   let body = req.body;
-  if (!body.email && !body.password && !body.name) {
-    res.status(300).send({ message: "error" });
+  if (!body.email || !body.password || !body.name) {
+    res.status(300).send({ message: "All Parameters Are Required" });
     return;
   }
+
+  const saltRound = 10;
+  const salt = await bcrypt.genSalt(saltRound);
+  const hashedPassword = await bcrypt.hash(body.password, salt);
   const Data = {
     name: body.name,
-    password: body.password,
+    password: hashedPassword,
     email: body.email,
   };
   try {
@@ -61,15 +67,85 @@ app.post("/api/v1/signUp", async (req, res) => {
       console.log(err);
     }
   }
-
-  //   } catch (err) {
-  //     console.log("err", err);
-  //     res.send({ message: `${err}` });
-  //   }
 });
 
+app.post("/api/v1/login", async (req, res) => {
+  let body = req.body;
+  try {
+    let find = await userModel
+      .findOne({ email: body.email }, "name email password _id")
+      .exec();
+    if (find) {
+      console.log("ok find", find);
+      const isMatched = await bcrypt.compare(body.password, find.password);
+      if (!isMatched) throw new Error("Incorrect Passwaord");
+      else {
+        console.log("password Matched");
+        const token = jwt.sign(
+          {
+            _id: find._id,
+            email: find.email,
+            iat: Math.floor(Date.now() / 1000) - 30,
+          },
+          SECRET
+        );
+        res.cookie("token", token, { httpOnly: true });
+        res.status(200).send({
+          message: "You Are LoggedInn",
+          data: {
+            userName: find.name,
+            email: find.email,
+            userId: find._id,
+            token,
+          },
+        });
+      }
+    } else {
+      console.log("ok not find");
+      res.status(400).send({ message: "Invalid Email Address" });
+      return;
+    }
+  } catch (error) {
+    res.status(400).send({ message: `${error}` });
+  }
+});
 const SECRET = process.env.SECRET || "topsecret";
 
+app.put("/api/v1/updpass", async (req, res) => {
+  let body = req.body;
+  try {
+    let checkPassword = await userModel
+      .findOne({ email: body.email }, "email password")
+      .exec();
+    if (!checkPassword) throw new Error("Invalid Email Address");
+    else {
+      let isMatched = await bcrypt.compare(
+        body.password,
+        checkPassword.password
+      );
+      if (!isMatched) throw new Error("Incorrect Old Password");
+      else {
+        const saltRound = 10;
+        const salt = await bcrypt.genSalt(saltRound);
+        const hashedPassword = await bcrypt.hash(body.password1, salt);
+        let updatePassword = await userModel.findOneAndUpdate(
+          // email specify which field need tobe updates
+          { email: body.email },
+          //   Second argument updates it
+          { password: hashedPassword },
+          //   new returns updates document
+          { new: true }
+        );
+        res.status(200).send({
+          message: "Update",
+          data: updatePassword,
+        });
+      }
+    }
+  } catch (error) {
+    res.status(400).send({ message: `${error}` });
+  }
+});
 // --- inCase of Static Hosting ---//
 const __dirname = path.resolve();
 app.use("/", express.static(path.join(__dirname, "./Frontend/build")));
