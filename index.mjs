@@ -222,6 +222,7 @@ app.put("/api/v1/forgetpassword", async (req, res) => {
     let body = req.body;
     let response = await userModel.findOne({ email: body.email }).exec();
     console.log("response", response);
+    if (!response) throw new Error("Invalid Email Input");
     const saltRound = 10;
     const salt = await bcrypt.genSalt(saltRound);
     let hashedPassword = await bcrypt.hash(body.password, salt);

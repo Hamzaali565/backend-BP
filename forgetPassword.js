@@ -4,6 +4,7 @@ app.put("/api/v1/forgetpassword", async (req, res) => {
   try {
     let body = req.body;
     let response = await userModel.findOne({ email: body.email }).exec();
+    if (!response) throw new Error("Invalid Email Input");
     console.log("response", response);
     const saltRound = 10;
     const salt = await bcrypt.genSalt(saltRound);
