@@ -30,10 +30,24 @@ const storage = multer.diskStorage({
   },
   filename: (req, file, cb) => {
     console.log("mul-file: ", file);
-    cb(null, `${file.fieldname}-${Date.now()}.jpg`);
+    cb(
+      null,
+      `${file.fieldname}-${Date.now()}${path.extname(file.originalname)}`
+    );
   },
 });
-const upload = multer({ storage: storage });
+
+const upload = multer({
+  storage: storage,
+  fileFilter: function (req, file, cb) {
+    if (file.mimetype !== "application/pdf") {
+      //   return cb(new Error("Only PDF files are allowed"));
+      console.log("errror");
+    }
+    cb(null, true);
+  },
+  limits: { fileSize: 5 * 1024 * 1024 },
+}).single("pdfFile");
 
 // -- Schema -- //
 const userSchema = new mongoose.Schema({
@@ -255,7 +269,7 @@ app.put("/api/v1/forgetpassword", async (req, res) => {
   }
 });
 
-app.post("/api/v1/upload", upload.single("image"), async (req, res) => {
+app.post("/api/v1/upload", upload, async (req, res) => {
   const directory = "./uploads";
   try {
     if (!req.file) {
