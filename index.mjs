@@ -40,14 +40,14 @@ const storage = multer.diskStorage({
 const upload = multer({
   storage: storage,
   fileFilter: function (req, file, cb) {
-    if (file.mimetype !== "application/pdf") {
-      //   return cb(new Error("Only PDF files are allowed"));
-      console.log("errror");
+    if (file.mimetype.includes("video")) {
+      cb(null, true);
+    } else {
+      cb(new Error("File type not supported"), false);
     }
-    cb(null, true);
   },
   limits: { fileSize: 5 * 1024 * 1024 },
-}).single("pdfFile");
+}).single("video");
 
 // -- Schema -- //
 const userSchema = new mongoose.Schema({
@@ -269,28 +269,36 @@ app.put("/api/v1/forgetpassword", async (req, res) => {
   }
 });
 
-app.post("/api/v1/upload", upload, async (req, res) => {
+app.post("/api/v1/upload", async (req, res) => {
   const directory = "./uploads";
   try {
-    if (!req.file) {
-      res.status(200).send({ message: "post without image" });
-      if (fs.existsSync(directory)) {
-        fs.readdir(directory, (err, files) => {
-          if (err) throw err;
-          for (const file of files) {
-            fs.unlinkSync(`${directory}/${file}`, (err) => {
-              if (err) throw err;
-            });
-          }
-        });
+    upload(req, res, function (err) {
+      if (err instanceof multer.MulterError) {
+        console.log("File too large");
+        return res.status(400).json({ message: "File too large" });
       }
-      return;
-    } else {
-      res.status(200).send({ message: "post with image" });
-      return;
-    }
+      if (!req.file) {
+        if (fs.existsSync(directory)) {
+          fs.readdir(directory, (err, files) => {
+            if (err) throw err;
+            for (const file of files) {
+              fs.unlinkSync(`${directory}/${file}`, (err) => {
+                if (err) throw err;
+              });
+            }
+          });
+        }
+        res.status(400).send({ message: "No data" });
+        return;
+      } else if (err) {
+        return res.status(500).json({ message: "Server error" });
+      }
+      res.status(200).json({ message: "File uploaded successfully" });
+    });
+    //   return;
+    // }
   } catch (err) {
-    console.log("err", err);
+    res.status(400).send({ message: `${err}` });
   }
 });
 // --- inCase of Static Hosting ---//
