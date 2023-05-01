@@ -8,6 +8,8 @@ import jwt from "jsonwebtoken";
 import { customAlphabet, nanoid } from "nanoid";
 import moment from "moment";
 import multer from "multer";
+import fs from "fs";
+import { error } from "console";
 mongoose.set("strictQuery", false);
 
 const app = express();
@@ -254,9 +256,20 @@ app.put("/api/v1/forgetpassword", async (req, res) => {
 });
 
 app.post("/api/v1/upload", upload.single("image"), async (req, res) => {
+  const directory = "./uploads";
   try {
     if (!req.file) {
       res.status(200).send({ message: "post without image" });
+      if (fs.existsSync(directory)) {
+        fs.readdir(directory, (err, files) => {
+          if (err) throw err;
+          for (const file of files) {
+            fs.unlinkSync(`${directory}/${file}`, (err) => {
+              if (err) throw err;
+            });
+          }
+        });
+      }
       return;
     } else {
       res.status(200).send({ message: "post with image" });
