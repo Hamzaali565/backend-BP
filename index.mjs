@@ -7,6 +7,7 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import { customAlphabet, nanoid } from "nanoid";
 import moment from "moment";
+import multer from "multer";
 mongoose.set("strictQuery", false);
 
 const app = express();
@@ -21,6 +22,16 @@ app.use(
     credentials: true,
   })
 );
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, "./uploads/");
+  },
+  filename: (req, file, cb) => {
+    console.log("mul-file: ", file);
+    cb(null, `${file.fieldname}-${Date.now()}.jpg`);
+  },
+});
+const upload = multer({ storage: storage });
 
 // -- Schema -- //
 const userSchema = new mongoose.Schema({
@@ -239,6 +250,20 @@ app.put("/api/v1/forgetpassword", async (req, res) => {
     res.status(200).send({ message: `Done` });
   } catch (error) {
     res.status(404).send({ message: `${error}` });
+  }
+});
+
+app.post("/api/v1/upload", upload.single("image"), async (req, res) => {
+  try {
+    if (!req.file) {
+      res.status(200).send({ message: "post without image" });
+      return;
+    } else {
+      res.status(200).send({ message: "post with image" });
+      return;
+    }
+  } catch (err) {
+    console.log("err", err);
   }
 });
 // --- inCase of Static Hosting ---//
