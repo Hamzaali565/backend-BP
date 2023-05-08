@@ -10,9 +10,8 @@ import moment from "moment";
 import multer from "multer";
 import fs from "fs";
 import admin from "firebase-admin";
-import { error } from "console";
-import { async } from "@firebase/util";
-// import { create } from "domain";
+import * as dotenv from "dotenv"; // see https://github.com/motdotla/dotenv#how-do-i-use-dotenv-with-import
+dotenv.config();
 mongoose.set("strictQuery", false);
 
 const app = express();
@@ -363,12 +362,10 @@ app.listen(port, () => {
 });
 
 // --- mongoose things ---- //
-const mongodbURI =
-  process.env.mongodbURI ||
-  "mongodb+srv://CRUD:hamzaali565@cluster0.kh990zg.mongodb.net/discountStore?retryWrites=true&w=majority";
+const MONGODB_URI = process.env.MONGODB_URI;
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
-mongoose.connect(mongodbURI);
+mongoose.connect(MONGODB_URI);
 
 ////////////////mongodb connected disconnected events///////////////////////////////////////////////
 mongoose.connection.on("connected", function () {
