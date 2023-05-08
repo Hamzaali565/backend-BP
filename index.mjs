@@ -64,19 +64,14 @@ const upload = multer({
   storage: storage,
 });
 
-// const directory = "./uploads";
-app.post("/api/v1/upload", upload.single("file"), async (req, res, next) => {
+app.post("/api/v1/upload", upload.single("video"), async (req, res) => {
   try {
     if (!req.file) {
-      res.status(500).send({ message: `Please select an Image` });
+      res.status(500).send({ message: `Please select an video` });
       return;
     }
     console.log(req.file.mimetype);
-    if (
-      req.file.mimetype !== "image/jpeg" &&
-      req.file.mimetype !== "image/png" &&
-      req.file.mimetype !== "image/jpg"
-    ) {
+    if (req.file.mimetype !== "video/mp4") {
       console.log("Invalid file format");
       return res.status(400).json({ message: "Invalid file format" });
     }
