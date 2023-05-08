@@ -11,6 +11,8 @@ import multer from "multer";
 import fs from "fs";
 import admin from "firebase-admin";
 import { error } from "console";
+import { async } from "@firebase/util";
+// import { create } from "domain";
 mongoose.set("strictQuery", false);
 
 const app = express();
@@ -122,6 +124,12 @@ const userSchema = new mongoose.Schema({
   },
 });
 export const userModel = mongoose.model("NewUsers", userSchema);
+const notification = new mongoose.Schema({
+  stinf: { type: String },
+  owner: { type: mongoose.ObjectId, ref: "NewUsers", required: true },
+  //   owner: { type: String, required: true },
+});
+export const notificationModel = mongoose.model("notification", notification);
 
 const OtpSchema = new mongoose.Schema({
   otp: { type: String, required: true },
@@ -328,6 +336,20 @@ app.put("/api/v1/forgetpassword", async (req, res) => {
   } catch (error) {
     res.status(404).send({ message: `${error}` });
   }
+});
+app.post(`/api/v1/notify`, async (req, res) => {
+  let body = req.body;
+  let getUsers = await userModel.find({ name: body.name }, "_id").exec();
+  console.log(getUsers);
+  let create;
+  let update = getUsers.map(async (id) => {
+    create = await notificationModel.create({
+      stinf: "hellos",
+      owner: id._id,
+    });
+    // id?._id;
+  });
+  //   console.log("create", create);
 });
 
 // --- inCase of Static Hosting ---//
