@@ -38,39 +38,32 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage: storage });
 
-app.post("/api/v1/upload", upload.single("file"), (req, res, next) => {
-  const directory = "./uploads";
-  if (!req.file) {
-    return res.status(400).send("No file uploaded.");
-  }
+app.post("/api/v1/upload", upload.single("file"), async (req, res, next) => {
+  try {
+    const [file] = await bucket.upload(req.file.path, {
+      destination: `image/${req.file.filename}`,
+    });
+    const [urlData] = await file.getSignedUrl({
+      action: "read",
+      expires: "03-09-2491",
+    });
+    console.log("public downloadable url: ", urlData);
 
-  const file = req.file;
-
-  const options = {
-    destination: `files/${file.originalname}`, // Change the filename and/or path according to your needs
-  };
-
-  bucket.upload(file.path, options, (err, uploadedFile) => {
-    if (err) {
-      console.error(err);
-      return next(err);
-    }
-
-    console.log("File uploaded to Firebase Storage:", uploadedFile.name);
-
-    // Delete the local file after uploading it to Firebase Storage
+    // Delete previously uploaded files
+    const directory = "uploads";
     if (fs.existsSync(directory)) {
-      fs.readdir(directory, (err, files) => {
-        if (err) throw err;
-        for (const file of files) {
-          fs.unlinkSync(`${directory}/${file}`, (err) => {
-            if (err) throw err;
-          });
-        }
-      });
+      const files = await fs.promises.readdir(directory);
+      for (const file of files) {
+        await fs.promises.unlink(`${directory}/${file}`);
+      }
     }
 
-    // Return the URL of the uploaded file to the client
-    res.status(200).json({ url: uploadedFile.publicUrl() });
-  });
+    res.status(200).json({
+      success: true,
+      url: urlData,
+    });
+  } catch (error) {
+    console.error(error);
+    next(error);
+  }
 });
